@@ -45,3 +45,10 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	}
 	http.Redirect(w, r, "/view/"+title, http.StatusFound)
 }
+
+func pagesHandler(w http.ResponseWriter, r *http.Request) {
+	err := templates.ExecuteTemplate(w, "pages.html", getWikiPages())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}

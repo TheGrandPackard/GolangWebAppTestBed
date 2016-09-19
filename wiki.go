@@ -7,7 +7,12 @@ import (
 	"regexp"
 )
 
-var templates = template.Must(template.ParseFiles("templates/edit.html", "templates/view.html", "templates/login.html", "templates/logout.html"))
+var templates = template.Must(template.ParseFiles(
+	"templates/edit.html",
+	"templates/view.html",
+	"templates/pages.html",
+	"templates/login.html",
+	"templates/logout.html"))
 
 func renderTemplate(w http.ResponseWriter, tmpl string, p *WikiPage) {
 	err := templates.ExecuteTemplate(w, tmpl+".html", p)
@@ -66,6 +71,7 @@ func main() {
 	http.HandleFunc("/view/", checkLogin(makeHandler(viewHandler)))
 	http.HandleFunc("/edit/", checkLogin(makeHandler(editHandler)))
 	http.HandleFunc("/save/", checkLogin(makeHandler(saveHandler)))
+	http.HandleFunc("/pages", checkLogin(pagesHandler))
 
 	// Session Management Pages
 	http.HandleFunc("/login", loginHandler)
