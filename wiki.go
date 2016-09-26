@@ -2,22 +2,92 @@ package main
 
 import (
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
 )
 
-var templates = template.Must(template.ParseFiles(
-	"templates/edit.html",
-	"templates/view.html",
-	"templates/pages.html",
-	"templates/login.html",
-	"templates/logout.html"))
+var isProduction = true
+var isTemplateLoaded = false
+var contentTemplate map[string]*template.Template
 
-func renderTemplate(w http.ResponseWriter, tmpl string, p *WikiPage) {
-	err := templates.ExecuteTemplate(w, tmpl+".html", p)
+// LoadTemplates
+func LoadTemplates() (err error) {
+	if isTemplateLoaded && isProduction {
+		return
+	}
+
+	isTemplateLoaded = true
+
+	contentTemplate = make(map[string]*template.Template)
+	log.Println("Loading Templates")
+
+	bData, err := ioutil.ReadFile("templates/_template.tpl")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return err
+	}
+
+	contentTemplate["_template"], err = template.New("_template").Parse(string(bData))
+	if err != nil {
+		return err
+	}
+
+	bData, err = ioutil.ReadFile("templates/_header.tpl")
+	if err != nil {
+		return err
+	}
+
+	_, err = contentTemplate["_template"].New("header").Parse(string(bData))
+	if err != nil {
+		return err
+	}
+
+	paths := []string{
+		"view",
+		"edit",
+		"login",
+		"logout",
+		"pages",
+	}
+
+	for _, path := range paths {
+		contentTemplate[path], err = contentTemplate["_template"].Clone()
+		if err != nil {
+			return err
+		}
+
+		bData, err = ioutil.ReadFile("templates/" + path + ".tpl")
+		if err != nil {
+			return err
+		}
+		_, err = contentTemplate[path].New("content").Parse(string(bData))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Site Struct
+type Site struct {
+	Title           string
+	UseHeader       bool
+	JsTopPage       template.HTML
+	JsBotPage       template.HTML
+	Content         string
+	LastSearchQuery string
+}
+
+// Site Init
+func SiteInit() *Site {
+	return &Site{
+		Title:           "Index",
+		JsTopPage:       "",
+		Content:         "",
+		JsBotPage:       "",
+		LastSearchQuery: "",
 	}
 }
 
@@ -66,6 +136,10 @@ func main() {
 
 	// Initialize Database Connection
 	initDB()
+	err := LoadTemplates()
+	if err != nil {
+		log.Printf("Error: %s", err)
+	}
 
 	// Wiki Pages
 	http.HandleFunc("/view/", checkLogin(makeHandler(viewHandler)))

@@ -1,10 +1,14 @@
 package main
 
+import (
+	"html/template"
+)
+
 // WikiPage Struct
 type WikiPage struct {
-	ID    int    `json:"id"`
-	Title string `json:"name"`
-	Body  string `json:"body"`
+	ID    int           `json:"id"`
+	Title string        `json:"name"`
+	Body  template.HTML `json:"body"`
 }
 
 // WikiPages Struct
@@ -26,7 +30,7 @@ func getWikiPages() WikiPages {
 		page := WikiPage{
 			ID:    id,
 			Title: title,
-			Body:  body,
+			Body:  template.HTML(body),
 		}
 
 		pages = append(pages, page)
@@ -48,7 +52,7 @@ func getWikiPage(p string) (*WikiPage, error) {
 	page := &WikiPage{
 		ID:    id,
 		Title: title,
-		Body:  body,
+		Body:  template.HTML(body),
 	}
 
 	return page, nil
@@ -63,7 +67,7 @@ func (p *WikiPage) savePage() error {
 			return err
 		}
 
-		res, err := stmt.Exec(p.Title, p.Body)
+		res, err := stmt.Exec(p.Title, string(p.Body))
 		if err != nil {
 			return err
 		}
@@ -82,7 +86,7 @@ func (p *WikiPage) savePage() error {
 			return err
 		}
 
-		res, err := stmt.Exec(p.Title, p.Body, p.ID)
+		res, err := stmt.Exec(p.Title, string(p.Body), p.ID)
 		if err != nil {
 			return err
 		}

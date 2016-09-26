@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"html/template"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,7 +24,24 @@ func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
 	if err != nil {
 		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
 	}
-	renderTemplate(w, "view", p)
+
+	type Index struct {
+		Site *Site
+		Page *WikiPage
+	}
+
+	resp := Index{
+		Site: SiteInit(),
+		Page: p,
+	}
+
+	resp.Site.Title = p.Title
+
+	err = contentTemplate["view"].Execute(w, resp)
+	if err != nil {
+		log.Printf("Error executing view: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request, title string) {
@@ -30,13 +49,31 @@ func editHandler(w http.ResponseWriter, r *http.Request, title string) {
 	if err != nil {
 		p = &WikiPage{Title: strings.Replace(title, "_", " ", -1)}
 	}
-	renderTemplate(w, "edit", p)
+
+	type Index struct {
+		Site *Site
+		Page *WikiPage
+	}
+
+	resp := Index{
+		Site: SiteInit(),
+		Page: p,
+	}
+
+	resp.Site.Title = "Edit | " + p.Title
+	resp.Site.JsTopPage = template.HTML("<script src=\"//cdn.tinymce.com/4/tinymce.min.js\"></script>")
+
+	err = contentTemplate["edit"].Execute(w, resp)
+	if err != nil {
+		log.Printf("Error executing edit: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	body := r.FormValue("body")
 	id, _ := strconv.Atoi(r.FormValue("id"))
-	p := &WikiPage{ID: id, Title: title, Body: body}
+	p := &WikiPage{ID: id, Title: title, Body: template.HTML(body)}
 
 	err := p.savePage()
 	if err != nil {
@@ -47,8 +84,24 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 }
 
 func pagesHandler(w http.ResponseWriter, r *http.Request) {
-	err := templates.ExecuteTemplate(w, "pages.html", getWikiPages())
+	p := getWikiPages()
+
+	type Index struct {
+		Site  *Site
+		Pages WikiPages
+	}
+
+	resp := Index{
+		Site:  SiteInit(),
+		Pages: p,
+	}
+
+	resp.Site.Title = "Pages"
+	resp.Site.JsTopPage = template.HTML("<link href=\"../css/pages.css\" rel=\"stylesheet\">")
+
+	err := contentTemplate["pages"].Execute(w, resp)
 	if err != nil {
+		log.Printf("Error executing pages: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

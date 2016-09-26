@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"html/template"
 	"log"
 	"net/http"
 
@@ -64,7 +65,22 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			log.Printf("User %s already logged in", username)
 			http.Redirect(w, r, "/view/home", http.StatusFound)
 		} else {
-			renderTemplate(w, "login", nil)
+			type Index struct {
+				Site *Site
+			}
+
+			resp := Index{
+				Site: SiteInit(),
+			}
+
+			resp.Site.Title = "Login"
+			resp.Site.JsTopPage = template.HTML("<link href=\"../css/login.css\" rel=\"stylesheet\">")
+
+			err := contentTemplate["login"].Execute(w, resp)
+			if err != nil {
+				log.Printf("Error executing login: %s", err.Error())
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 		}
 	}
 }
@@ -86,7 +102,21 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("User %s logged out", username)
 
-	renderTemplate(w, "logout", nil)
+	type Index struct {
+		Site *Site
+	}
+
+	resp := Index{
+		Site: SiteInit(),
+	}
+
+	resp.Site.Title = "Login"
+
+	err = contentTemplate["logout"].Execute(w, resp)
+	if err != nil {
+		log.Printf("Error executing logout: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func getDatabaseUser(u string) (User, error) {
