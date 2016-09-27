@@ -1,39 +1,33 @@
-package main
+package template
 
 import (
-	"errors"
 	"html/template"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/thegrandpackard/wiki/database"
 )
 
-func getTitle(w http.ResponseWriter, r *http.Request) (string, error) {
-	m := validPath.FindStringSubmatch(r.URL.Path)
-	if m == nil {
-		http.NotFound(w, r)
-		return "", errors.New("Invalid Page Title")
-	}
-	return m[2], nil // The title is the second subexpression.
-}
-
-func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p, err := getWikiPage(title)
-
-	if err != nil {
+func wikiViewHandler(w http.ResponseWriter, r *http.Request, title string) {
+	p, err := database.GetWikiPage(title)
+	if p == nil {
 		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
+		return
 	}
 
+	LoadTemplates()
 	type Index struct {
 		Site *Site
-		Page *WikiPage
+		Page *database.WikiPage
 	}
-
 	resp := Index{
-		Site: SiteInit(),
+		Site: SiteInit(r),
 		Page: p,
 	}
+
+	log.Printf("Page: %+v", p)
 
 	resp.Site.Title = p.Title
 
@@ -41,22 +35,23 @@ func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
 	if err != nil {
 		log.Printf("Error executing view: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
-func editHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p, err := getWikiPage(title)
+func wikiEditHandler(w http.ResponseWriter, r *http.Request, title string) {
+	p, err := database.GetWikiPage(title)
 	if err != nil {
-		p = &WikiPage{Title: strings.Replace(title, "_", " ", -1)}
+		p = &database.WikiPage{Title: strings.Replace(title, "_", " ", -1)}
 	}
 
+	LoadTemplates()
 	type Index struct {
 		Site *Site
-		Page *WikiPage
+		Page *database.WikiPage
 	}
-
 	resp := Index{
-		Site: SiteInit(),
+		Site: SiteInit(r),
 		Page: p,
 	}
 
@@ -67,41 +62,49 @@ func editHandler(w http.ResponseWriter, r *http.Request, title string) {
 	if err != nil {
 		log.Printf("Error executing edit: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
-func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
+func wikiSaveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	body := r.FormValue("body")
 	id, _ := strconv.Atoi(r.FormValue("id"))
-	p := &WikiPage{ID: id, Title: title, Body: template.HTML(body)}
+	p := &database.WikiPage{ID: id, Title: title, Body: template.HTML(body)}
 
-	err := p.savePage()
+	err := p.SavePage()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, "/view/"+title, http.StatusFound)
+	return
 }
 
-func pagesHandler(w http.ResponseWriter, r *http.Request) {
-	p := getWikiPages()
-
-	type Index struct {
-		Site  *Site
-		Pages WikiPages
+func wikiPagesHandler(w http.ResponseWriter, r *http.Request) {
+	p, err := database.GetWikiPages()
+	if err != nil {
+		log.Printf("Error executing pages: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
+	LoadTemplates()
+	type Index struct {
+		Site  *Site
+		Pages database.WikiPages
+	}
 	resp := Index{
-		Site:  SiteInit(),
+		Site:  SiteInit(r),
 		Pages: p,
 	}
 
 	resp.Site.Title = "Pages"
 	resp.Site.JsTopPage = template.HTML("<link href=\"../css/pages.css\" rel=\"stylesheet\">")
 
-	err := contentTemplate["pages"].Execute(w, resp)
+	err = contentTemplate["pages"].Execute(w, resp)
 	if err != nil {
 		log.Printf("Error executing pages: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }

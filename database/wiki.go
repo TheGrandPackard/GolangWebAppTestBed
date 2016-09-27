@@ -1,8 +1,6 @@
-package main
+package database
 
-import (
-	"html/template"
-)
+import "html/template"
 
 // WikiPage Struct
 type WikiPage struct {
@@ -14,51 +12,44 @@ type WikiPage struct {
 // WikiPages Struct
 type WikiPages []WikiPage
 
-func getWikiPages() WikiPages {
-	var pages WikiPages
-
-	rows, err := db.Query("SELECT id, title, body FROM wiki.page")
-	checkDBError(err)
-	defer rows.Close()
-
-	for rows.Next() {
-		var id int
-		var title string
-		var body string
-		err = rows.Scan(&id, &title, &body)
-
-		page := WikiPage{
-			ID:    id,
-			Title: title,
-			Body:  template.HTML(body),
-		}
-
-		pages = append(pages, page)
-	}
-
-	return pages
-}
-
-func getWikiPage(p string) (*WikiPage, error) {
-	var id int
-	var title string
+//GetWikiPage -- Get  page by name
+func GetWikiPage(p string) (*WikiPage, error) {
+	page := &WikiPage{}
 	var body string
 
-	err := db.QueryRow("SELECT id, title, body FROM wiki.page WHERE title LIKE '"+p+"'").Scan(&id, &title, &body)
+	err := db.QueryRow("SELECT id, title, body FROM wiki.page WHERE title LIKE '"+p+"'").Scan(&page.ID, &page.Title, &body)
 	if err != nil {
 		return nil, err
 	}
 
-	page := &WikiPage{
-		ID:    id,
-		Title: title,
-		Body:  template.HTML(body),
-	}
-
+	page.Body = template.HTML(body)
 	return page, nil
 }
 
-func (p *WikiPage) savePage() error {
+//GetWikiPages -- Get all  pages
+func GetWikiPages() (WikiPages, error) {
+	var pages WikiPages
+
+	rows, err := db.Query("SELECT id, title, body FROM wiki.page")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		page := WikiPage{}
+		var body string
+		err = rows.Scan(&page.ID, &page.Title, &body)
+
+		page.Body = template.HTML(body)
+		pages = append(pages, page)
+	}
+
+	return pages, nil
+}
+
+//SavePage -- Save page
+func (p *WikiPage) SavePage() error {
 
 	if p.ID == 0 {
 		// insert
