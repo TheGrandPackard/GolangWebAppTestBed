@@ -14,6 +14,10 @@
         </label>
       </div>
       <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+
+      {{if .Site.Error}}
+      <div class="alert alert-danger" style="margin-top: 15px;">{{.Site.Error}}</div>
+      {{end}}
     </form>
 
   </div> <!-- /container -->

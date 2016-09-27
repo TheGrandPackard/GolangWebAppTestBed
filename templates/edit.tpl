@@ -5,9 +5,12 @@
   <h1>Editing {{.Page.Title}}</h1>
 
   <form action="/save/{{.Page.Title}}" method="POST">
-  <div><textarea name="body" rows="20" cols="80">{{printf "%s" .Page.Body}}</textarea></div>
-  <input type="hidden" name="id" value="{{.Page.ID}}">
-  <div><input type="submit" value="Save"></div>
+    <div><textarea name="body" rows="20" cols="80">{{printf "%s" .Page.GetBody}}</textarea></div>
+    <input type="hidden" name="id" value="{{.Page.ID}}">
+    <div>
+      <button class="btn btn-primary">Save</button>
+      <button class="btn btn-default" onclick="window.history.back();">Cancel</button>
+    </div>
   </form>
 
 </div> <!-- /container -->

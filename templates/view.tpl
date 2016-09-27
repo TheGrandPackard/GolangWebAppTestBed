@@ -2,10 +2,8 @@
 
   <div class="container">
 
-    <h1>{{.Page.Title}}</h1>
+    <h1>{{.Page.Title}} <small>[<a href="/edit/{{.Page.Title}}">edit</a>]</small></h1>
 
-    <p>[<a href="/edit/{{.Page.Title}}">edit</a>]</p>
-
-    <div class=".mce-content-body">{{.Page.Body}}</div>
+    <div>{{.Page.GetBody}}</div>
 
   </div> <!-- /container -->

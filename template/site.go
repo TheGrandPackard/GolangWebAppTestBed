@@ -17,6 +17,7 @@ type Site struct {
 	Content         string
 	LastSearchQuery string
 	Session         *sessions.Session
+	Error           string
 }
 
 // SiteInit Helper
@@ -31,5 +32,6 @@ func SiteInit(r *http.Request) *Site {
 		JsBotPage:       "",
 		LastSearchQuery: "",
 		Session:         session,
+		Error:           "",
 	}
 }

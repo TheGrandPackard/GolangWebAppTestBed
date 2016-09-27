@@ -1,36 +1,32 @@
 package database
 
-import "html/template"
+import (
+	"errors"
+	"html/template"
+)
 
 // WikiPage Struct
 type WikiPage struct {
-	ID    int           `json:"id"`
-	Title string        `json:"name"`
-	Body  template.HTML `json:"body"`
+	ID    int    `db:"id"`
+	Title string `db:"title"`
+	Body  string `db:"body"`
 }
 
 // WikiPages Struct
 type WikiPages []WikiPage
 
 //GetWikiPage -- Get  page by name
-func GetWikiPage(p string) (*WikiPage, error) {
-	page := &WikiPage{}
-	var body string
-
-	err := db.QueryRow("SELECT id, title, body FROM wiki.page WHERE title LIKE '"+p+"'").Scan(&page.ID, &page.Title, &body)
-	if err != nil {
-		return nil, err
-	}
-
-	page.Body = template.HTML(body)
-	return page, nil
+func GetWikiPage(title string) (*WikiPage, error) {
+	var page *WikiPage
+	err := db.QueryRowx("SELECT id, title, body FROM wiki.page WHERE title LIKE ?", title).StructScan(page)
+	return page, err
 }
 
 //GetWikiPages -- Get all  pages
 func GetWikiPages() (WikiPages, error) {
 	var pages WikiPages
 
-	rows, err := db.Query("SELECT id, title, body FROM wiki.page")
+	rows, err := db.Queryx("SELECT id, title, body FROM wiki.page")
 	if err != nil {
 		return nil, err
 	}
@@ -38,55 +34,41 @@ func GetWikiPages() (WikiPages, error) {
 
 	for rows.Next() {
 		page := WikiPage{}
-		var body string
-		err = rows.Scan(&page.ID, &page.Title, &body)
-
-		page.Body = template.HTML(body)
+		err = rows.StructScan(page)
 		pages = append(pages, page)
 	}
 
 	return pages, nil
 }
 
-//SavePage -- Save page
-func (p *WikiPage) SavePage() error {
-
-	if p.ID == 0 {
-		// insert
-		stmt, err := db.Prepare("INSERT INTO wiki.page set title=?, body=?")
+//SavePage -- Insert or Update page
+func (page *WikiPage) SavePage() error {
+	if page.ID == 0 /* INSERT */ {
+		stmt, err := db.NamedExec("INSERT INTO wiki.page set title=:title, body=:body", page)
 		if err != nil {
 			return err
 		}
-
-		res, err := stmt.Exec(p.Title, string(p.Body))
+		id, err := stmt.LastInsertId()
 		if err != nil {
 			return err
 		}
-
-		id, err := res.LastInsertId()
+		page.ID = int(id)
+	} else /* UPDATE */ {
+		stmt, err := db.NamedExec("UPDATE wiki.page set title=:title, body=:body WHERE id=:id", page)
 		if err != nil {
 			return err
 		}
-
-		p.ID = int(id)
-
-	} else {
-		// update
-		stmt, err := db.Prepare("UPDATE wiki.page set title=?, body=? where id=?")
+		affected, err := stmt.RowsAffected()
 		if err != nil {
 			return err
-		}
-
-		res, err := stmt.Exec(p.Title, string(p.Body), p.ID)
-		if err != nil {
-			return err
-		}
-
-		_, err = res.RowsAffected()
-		if err != nil {
-			return err
+		} else if affected != 1 {
+			return errors.New("Rows Affected: " + string(affected))
 		}
 	}
-
 	return nil
+}
+
+//GetBody -- For rendering pages
+func (page *WikiPage) GetBody() template.HTML {
+	return template.HTML(page.Body)
 }

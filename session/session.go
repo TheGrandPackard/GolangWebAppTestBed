@@ -7,8 +7,8 @@ import (
 	"github.com/gorilla/sessions"
 )
 
-// Session max time (1800 seconds = 30 minutes)
-var sessionMaxLifetime = 1800
+//MaxLifetime max time (1800 seconds = 30 minutes)
+var MaxLifetime = 1800
 var store = sessions.NewCookieStore([]byte("thereoncewasapersonwhoneershallbenamed"))
 
 // GetSession for access in Handlers

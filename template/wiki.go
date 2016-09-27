@@ -27,8 +27,6 @@ func wikiViewHandler(w http.ResponseWriter, r *http.Request, title string) {
 		Page: p,
 	}
 
-	log.Printf("Page: %+v", p)
-
 	resp.Site.Title = p.Title
 
 	err = contentTemplate["view"].Execute(w, resp)
@@ -69,7 +67,7 @@ func wikiEditHandler(w http.ResponseWriter, r *http.Request, title string) {
 func wikiSaveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	body := r.FormValue("body")
 	id, _ := strconv.Atoi(r.FormValue("id"))
-	p := &database.WikiPage{ID: id, Title: title, Body: template.HTML(body)}
+	p := &database.WikiPage{ID: id, Title: title, Body: body}
 
 	err := p.SavePage()
 	if err != nil {
