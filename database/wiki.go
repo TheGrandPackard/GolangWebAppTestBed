@@ -17,7 +17,7 @@ type WikiPages []WikiPage
 
 //GetWikiPage -- Get  page by name
 func GetWikiPage(title string) (*WikiPage, error) {
-	var page *WikiPage
+	page := &WikiPage{}
 	err := db.QueryRowx("SELECT id, title, body FROM wiki.page WHERE title LIKE ?", title).StructScan(page)
 	return page, err
 }
@@ -34,7 +34,7 @@ func GetWikiPages() (WikiPages, error) {
 
 	for rows.Next() {
 		page := WikiPage{}
-		err = rows.StructScan(page)
+		err = rows.StructScan(&page)
 		pages = append(pages, page)
 	}
 

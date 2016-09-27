@@ -24,8 +24,9 @@ func MapTemplateHandlers() {
 	http.HandleFunc("/pages", checkLogin(wikiPagesHandler))
 
 	// Session Management Pages
-	http.HandleFunc("/login", LoginHandler)
-	http.HandleFunc("/logout", LogoutHandler)
+	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/logout", logoutHandler)
+	http.HandleFunc("/signup", signupHandler)
 }
 
 var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9_ ]+)$")

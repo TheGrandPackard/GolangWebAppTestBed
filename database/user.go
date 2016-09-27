@@ -1,12 +1,17 @@
 package database
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 // User Struct
 type User struct {
-	ID       int    `db:"id"`
-	Username string `db:"username"`
-	Password string `db:"password"`
+	ID        int       `db:"id"`
+	Username  string    `db:"username"`
+	Password  string    `db:"password"`
+	Enabled   bool      `db:"enabled"`
+	DateAdded time.Time `db:"date_added"`
 }
 
 // Users Struct
@@ -15,7 +20,7 @@ type Users []User
 // GetUser -- Get a user from database
 func GetUser(username string) (*User, error) {
 	user := &User{}
-	err := db.QueryRowx("SELECT id, username, password FROM wiki.user WHERE username LIKE ?", username).StructScan(user)
+	err := db.QueryRowx("SELECT id, username, password, enabled, date_added FROM wiki.user WHERE username LIKE ?", username).StructScan(user)
 	if err != nil {
 		return nil, errors.New("No User: " + username)
 	}
@@ -36,7 +41,7 @@ func (user *User) SaveUser() error {
 		}
 		user.ID = int(id)
 	} else /* UPDATE */ {
-		stmt, err := db.NamedExec("UPDATE wiki.user set username=:username, password=:password WHERE id=:id", user)
+		stmt, err := db.NamedExec("UPDATE wiki.user set username=:username, password=:password, enabled=:enabled WHERE id=:id", user)
 		if err != nil {
 			return err
 		}

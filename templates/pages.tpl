@@ -18,7 +18,7 @@
             <tr>
               <td>{{.ID}}</td>
               <td><a href="view/{{.Title}}">{{.Title}}<a/></td>
-              <td>{{.Body}}</td>
+              <td>{{.GetBody}}</td>
             </tr>
             {{end}}
           </tbody>

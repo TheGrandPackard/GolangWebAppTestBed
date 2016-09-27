@@ -12,11 +12,13 @@ var db *sqlx.DB
 
 //InitDB Once
 func InitDB() {
-	conn, err := sqlx.Open("mysql", "wiki:wiki@tcp(localhost:3306)/wiki?charset=utf8")
-	if err != nil {
-		panic("Error opening database:" + err.Error())
-	}
+	if db == nil {
+		conn, err := sqlx.Open("mysql", "wiki:wiki@tcp(localhost:3306)/wiki?charset=utf8")
+		if err != nil {
+			panic("Error opening database:" + err.Error())
+		}
 
-	db = conn
-	log.Printf("Database connection established")
+		db = conn
+		log.Printf("Database connection established")
+	}
 }

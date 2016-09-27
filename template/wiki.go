@@ -10,6 +10,9 @@ import (
 	"github.com/thegrandpackard/wiki/database"
 )
 
+var wikiEditJsTop = template.HTML("<script src=\"//cdn.tinymce.com/4/tinymce.min.js\"></script>")
+var wikiPagesJsTop = template.HTML("<link href=\"../css/pages.css\" rel=\"stylesheet\">")
+
 func wikiViewHandler(w http.ResponseWriter, r *http.Request, title string) {
 	p, err := database.GetWikiPage(title)
 	if p == nil {
@@ -54,7 +57,7 @@ func wikiEditHandler(w http.ResponseWriter, r *http.Request, title string) {
 	}
 
 	resp.Site.Title = "Edit | " + p.Title
-	resp.Site.JsTopPage = template.HTML("<script src=\"//cdn.tinymce.com/4/tinymce.min.js\"></script>")
+	resp.Site.JsTopPage = wikiEditJsTop
 
 	err = contentTemplate["edit"].Execute(w, resp)
 	if err != nil {
@@ -97,7 +100,7 @@ func wikiPagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.Site.Title = "Pages"
-	resp.Site.JsTopPage = template.HTML("<link href=\"../css/pages.css\" rel=\"stylesheet\">")
+	resp.Site.JsTopPage = wikiPagesJsTop
 
 	err = contentTemplate["pages"].Execute(w, resp)
 	if err != nil {

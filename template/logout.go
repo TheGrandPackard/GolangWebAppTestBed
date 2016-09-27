@@ -7,9 +7,10 @@ import (
 	"github.com/thegrandpackard/wiki/session"
 )
 
-// LogoutHandler For HTTP
-func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+var logoutTitle = "Logged Out"
 
+// LogoutHandler For HTTP
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	sess := session.GetSession(r)
 
 	username := sess.Values["username"]
@@ -30,7 +31,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		Site: SiteInit(r),
 	}
 
-	resp.Site.Title = "Logged Out"
+	resp.Site.Title = logoutTitle
 
 	err := contentTemplate["logout"].Execute(w, resp)
 	if err != nil {
