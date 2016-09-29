@@ -9,6 +9,7 @@
           <thead>
             <tr>
               <th>ID</th>
+              <th>Version</th>
               <th>Title</th>
               <th>Body</th>
             </tr>
@@ -17,6 +18,7 @@
             {{range .Pages}}
             <tr>
               <td>{{.ID}}</td>
+                <td>{{.Version}}</td>
               <td><a href="view/{{.Title}}">{{.Title}}<a/></td>
               <td>{{.GetBody}}</td>
             </tr>

@@ -10,12 +10,19 @@
 			<a href="/" class="navbar-brand">Wiki</a>
 		</div>
 		<div class="collapse navbar-collapse" id="nav-header">
+		<ul class="nav navbar-nav pull-left">
 			{{if .Site.Session.Values }}
-			<ul class="nav navbar-nav pull-left">
+				{{if .Site.User.ManagePages }}
 				<li><a href="/pages">Pages</a></li>
+				{{end}}
+					{{if .Site.User.ManageUsers }}
+					<li><a href="/users">Users</a></li>
+					{{end}}
 				<li><a href="/logout">Log Out</a></li>
-			</ul>
+			{{else}}
+				<li><a href="/login">Sign In</a></li>
 			{{end}}
+		</ul>
 			<form class="navbar-form pull-right" action="/search/" role="search" method="GET">
 				<div class="form-group">
 					<input type="text" class="form-control" name="name" placeholder="Search">
