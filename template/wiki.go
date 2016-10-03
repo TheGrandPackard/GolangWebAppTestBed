@@ -2,19 +2,59 @@ package template
 
 import (
 	"html/template"
-	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/gorilla/mux"
 	"github.com/thegrandpackard/wiki/database"
 )
 
 var wikiEditJsTop = template.HTML("<script src=\"//cdn.tinymce.com/4/tinymce.min.js\"></script>")
 var wikiPagesJsTop = template.HTML("<link href=\"../css/pages.css\" rel=\"stylesheet\">")
 
+func wikiHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	page := vars["page"]
+
+	if page == "" {
+		wikiViewHandler(w, r, "home")
+		return
+	}
+
+	var validPath = regexp.MustCompile("^/(edit|save|view)/")
+	m := validPath.FindStringSubmatch(r.URL.Path)
+	if m == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	switch m[1] {
+	case "view":
+		wikiViewHandler(w, r, page)
+		return
+	case "edit":
+		wikiEditHandler(w, r, page)
+		return
+	case "save":
+		wikiSaveHandler(w, r, page)
+		return
+	}
+}
+
 func wikiViewHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p, err := database.GetWikiPage(title)
+	r.ParseForm()
+	version := r.FormValue("version")
+	var p *database.WikiPage
+
+	if version != "" {
+		ver, _ := strconv.Atoi(version)
+		p, _ = database.GetWikiPageVersion(title, ver)
+	} else {
+		p, _ = database.GetWikiPage(title)
+	}
+
 	if p == nil {
 		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
 		return
@@ -29,20 +69,19 @@ func wikiViewHandler(w http.ResponseWriter, r *http.Request, title string) {
 		Site: SiteInit(r),
 		Page: p,
 	}
-
 	resp.Site.Title = p.Title
 
-	err = contentTemplate["view"].Execute(w, resp)
-	if err != nil {
-		log.Printf("Error executing view: %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := contentTemplate["view"].Execute(w, resp); err != nil {
+		handleError(w, r, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func wikiEditHandler(w http.ResponseWriter, r *http.Request, title string) {
 	p, err := database.GetWikiPage(title)
 	if err != nil {
+		handleError(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	} else if p == nil {
 		p = &database.WikiPage{Title: strings.Replace(title, "_", " ", -1)}
 	}
 
@@ -55,15 +94,11 @@ func wikiEditHandler(w http.ResponseWriter, r *http.Request, title string) {
 		Site: SiteInit(r),
 		Page: p,
 	}
-
 	resp.Site.Title = "Edit | " + p.Title
 	resp.Site.JsTopPage = wikiEditJsTop
 
-	err = contentTemplate["edit"].Execute(w, resp)
-	if err != nil {
-		log.Printf("Error executing edit: %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err = contentTemplate["edit"].Execute(w, resp); err != nil {
+		handleError(w, r, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -72,20 +107,23 @@ func wikiSaveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	id, _ := strconv.Atoi(r.FormValue("id"))
 	p := &database.WikiPage{ID: id, Title: title, Body: body}
 
-	err := p.SavePage()
+	err := p.Save()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, "/view/"+title, http.StatusFound)
-	return
 }
 
 func wikiPagesHandler(w http.ResponseWriter, r *http.Request) {
+	if checkLoggedIn(w, r) == false {
+		handleError(w, r, "Page Not Found", http.StatusNotFound)
+		return
+	}
+
 	p, err := database.GetWikiPages()
 	if err != nil {
-		log.Printf("Error executing pages: %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -98,14 +136,10 @@ func wikiPagesHandler(w http.ResponseWriter, r *http.Request) {
 		Site:  SiteInit(r),
 		Pages: p,
 	}
-
 	resp.Site.Title = "Pages"
 	resp.Site.JsTopPage = wikiPagesJsTop
 
-	err = contentTemplate["pages"].Execute(w, resp)
-	if err != nil {
-		log.Printf("Error executing pages: %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err = contentTemplate["pages"].Execute(w, resp); err != nil {
+		handleError(w, r, err.Error(), http.StatusInternalServerError)
 	}
 }

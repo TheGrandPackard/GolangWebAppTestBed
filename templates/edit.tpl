@@ -9,7 +9,7 @@
     <input type="hidden" name="id" value="{{.Page.ID}}">
     <div>
       <button class="btn btn-primary">Save</button>
-      <button class="btn btn-default" onclick="window.history.back();">Cancel</button>
+      <button class="btn btn-default" onclick="window.history.back(); return;">Cancel</button>
     </div>
   </form>
 

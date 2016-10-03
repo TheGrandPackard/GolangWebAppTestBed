@@ -12,11 +12,13 @@ import (
 var signupTitle = "Sign Up"
 var signupJSTop = template.HTML("<link href=\"../css/signup.css\" rel=\"stylesheet\">")
 
-// LoginHandler for HTTP
 func signupHandler(w http.ResponseWriter, r *http.Request) {
+	if checkLoggedIn(w, r) == true {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
 
 	if r.Method == http.MethodPost {
-
 		r.ParseForm()
 		username := r.FormValue("username")
 		password := r.FormValue("password")
@@ -82,7 +84,7 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 				Password: password,
 			}
 
-			if err := user.SaveUser(); err != nil {
+			if err := user.Save(); err != nil {
 				LoadTemplates()
 				type Index struct {
 					Site *Site
@@ -101,7 +103,7 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 				}
 			} else {
-				sess.Values["username"] = "username"
+				sess.Values["user"] = user
 				if err = sess.Save(r, w); err != nil {
 					log.Printf("Error saving Session Values: %s", err)
 				}

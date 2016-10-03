@@ -14,7 +14,7 @@
         </label>
       </div>
       <button class="btn btn-lg btn-primary btn-block" type="submit">Sign In</button>
-      <button class="btn btn-lg btn-success btn-block" type="submit" onclick="window.location='/signup'">Sign Up</button>
+      <button class="btn btn-lg btn-success btn-block" type="submit" onclick="window.location='/signup'; return false;">Sign Up</button>
 
       {{if .Site.Error}}
       <div class="alert alert-danger" style="margin-top: 15px;">{{.Site.Error}}</div>

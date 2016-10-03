@@ -13,7 +13,7 @@ var db *sqlx.DB
 //InitDB Once
 func InitDB() {
 	if db == nil {
-		conn, err := sqlx.Open("mysql", "wiki:wiki@tcp(localhost:3306)/wiki?charset=utf8")
+		conn, err := sqlx.Open("mysql", "wiki:wiki@tcp(localhost:3306)/wiki?charset=utf8&parseTime=true")
 		if err != nil {
 			panic("Error opening database:" + err.Error())
 		}

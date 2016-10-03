@@ -9,18 +9,22 @@ import (
 
 var logoutTitle = "Logged Out"
 
-// LogoutHandler For HTTP
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
-	sess := session.GetSession(r)
+	if checkLoggedIn(w, r) == false {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
 
-	username := sess.Values["username"]
+	sess := session.GetSession(r)
+	user := session.GetSessionUser(sess)
+
 	// Invalidate the session
 	sess.Options.MaxAge = -1
 	// Save it before we write to the response/return from the handler.
 	if err := sess.Save(r, w); err != nil {
 		log.Printf("Error saving Session Values: %s", err)
 	}
-	log.Printf("User %s logged out", username)
+	log.Printf("User %s logged out", user.Username)
 
 	LoadTemplates()
 	type Index struct {

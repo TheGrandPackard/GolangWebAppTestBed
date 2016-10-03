@@ -1,65 +1,79 @@
 package template
 
 import (
+	"encoding/gob"
 	"log"
 	"net/http"
-	"regexp"
 
+	"github.com/gorilla/mux"
+	"github.com/thegrandpackard/wiki/database"
 	"github.com/thegrandpackard/wiki/session"
 )
 
-// MapTemplateHandlers -- For main
-func MapTemplateHandlers() {
+// AddTemplateRoutes -- Handles HTML Template Routes
+func AddTemplateRoutes(router *mux.Router) {
+
+	// Register Structs
+	gob.Register(database.User{})
 
 	// Load Templates
 	err := LoadTemplates()
 	if err != nil {
-		log.Printf("Error: %s", err)
+		log.Printf("Error Loading Templates: %s", err)
 	}
 
 	// Wiki Pages
-	http.HandleFunc("/view/", checkLogin(wikiMakeHandler(wikiViewHandler)))
-	http.HandleFunc("/edit/", checkLogin(wikiMakeHandler(wikiEditHandler)))
-	http.HandleFunc("/save/", checkLogin(wikiMakeHandler(wikiSaveHandler)))
-	http.HandleFunc("/pages", checkLogin(wikiPagesHandler))
+	router.HandleFunc("/", wikiHandler)
+	router.HandleFunc("/view/{page}", wikiHandler)
+	router.HandleFunc("/edit/{page}", wikiHandler)
+	router.HandleFunc("/save/{page}", wikiHandler)
+	router.HandleFunc("/pages", wikiPagesHandler)
 
-	// Session Management Pages
-	http.HandleFunc("/login", loginHandler)
-	http.HandleFunc("/logout", logoutHandler)
-	http.HandleFunc("/signup", signupHandler)
+	// User Management Pages
+	router.HandleFunc("/login", loginHandler).Methods("GET", "POST")
+	router.HandleFunc("/logout", logoutHandler).Methods("GET")
+	router.HandleFunc("/signup", signupHandler).Methods("GET", "POST")
+	router.HandleFunc("/users", usersHandler).Methods("GET")
+	router.HandleFunc("/users", userEditHandler).Methods("POST")
+	router.HandleFunc("/users/edit/{userID}", userEditPageHandler).Methods("GET", "POST")
 }
 
-var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9_ ]+)$")
-
-func wikiMakeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		m := validPath.FindStringSubmatch(r.URL.Path)
-		if m == nil {
-			http.NotFound(w, r)
-			return
-		}
-		fn(w, r, m[2])
-	}
-}
-
-func checkLogin(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		session := session.GetSession(r)
-
-		if session == nil || session.Values["username"] == nil {
-			log.Printf("No Session for User. Redirecting to Login")
+func checkLoggedIn(w http.ResponseWriter, r *http.Request) bool {
+	session := session.GetSession(r)
+	if session == nil || session.Values["user"] == nil {
+		if r.URL.Path != "/login" {
 			http.Redirect(w, r, "/login", http.StatusFound)
-			return
 		}
+		return false
+	}
+	return true
+}
 
-		// TODO: Session Expiry
-		// if time.Now().After(session.Values["expiry"].(time.Time)) {
-		// 	log.Printf("Session for User %s expired. Redirecting to Login", session.Values["username"])
-		// 	http.Redirect(w, r, "/login", http.StatusFound)
-		// 	return
-		// }
+func checkManageUsers(r *http.Request) bool {
+	sess := session.GetSession(r)
+	if sess == nil || sess.Values["user"] == nil {
+		return false
+	}
+	user := session.GetSessionUser(sess)
+	return user.CanManageUsers()
+}
 
-		fn(w, r)
+func handleError(w http.ResponseWriter, r *http.Request, message string, code int) {
+	LoadTemplates()
+	type Index struct {
+		Site *Site
+	}
+	resp := Index{
+		Site: SiteInit(r),
+	}
+	resp.Site.Title = "Error"
+	resp.Site.Error = message
+
+	w.WriteHeader(code)
+	err := contentTemplate["error"].Execute(w, resp)
+	if err != nil {
+		log.Printf("Error rendering error page: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }

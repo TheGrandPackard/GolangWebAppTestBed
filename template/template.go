@@ -45,9 +45,14 @@ func LoadTemplates() (err error) {
 		"view",
 		"edit",
 		"pages",
+
 		"login",
 		"logout",
 		"signup",
+		"users",
+		"user_edit",
+
+		"error",
 	}
 
 	for _, path := range paths {

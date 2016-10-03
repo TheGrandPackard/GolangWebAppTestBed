@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
+	"github.com/thegrandpackard/wiki/database"
 	"github.com/thegrandpackard/wiki/session"
 )
 
@@ -17,13 +18,15 @@ type Site struct {
 	Content         string
 	LastSearchQuery string
 	Session         *sessions.Session
+	User            *database.User
 	Error           string
 }
 
 // SiteInit Helper
 func SiteInit(r *http.Request) *Site {
 
-	session := session.GetSession(r)
+	sess := session.GetSession(r)
+	user := session.GetSessionUser(sess)
 
 	return &Site{
 		Title:           "Index",
@@ -31,7 +34,8 @@ func SiteInit(r *http.Request) *Site {
 		Content:         "",
 		JsBotPage:       "",
 		LastSearchQuery: "",
-		Session:         session,
+		Session:         sess,
+		User:            user,
 		Error:           "",
 	}
 }

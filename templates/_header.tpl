@@ -11,7 +11,7 @@
 		</div>
 		<div class="collapse navbar-collapse" id="nav-header">
 		<ul class="nav navbar-nav pull-left">
-			{{if .Site.Session.Values }}
+			{{if .Site.User }}
 				{{if .Site.User.ManagePages }}
 				<li><a href="/pages">Pages</a></li>
 				{{end}}
@@ -21,13 +21,14 @@
 				<li><a href="/logout">Log Out</a></li>
 			{{else}}
 				<li><a href="/login">Sign In</a></li>
+				<li><a href="/signup">Sign Up</a></li>
 			{{end}}
 		</ul>
-			<form class="navbar-form pull-right" action="/search/" role="search" method="GET">
+			<form class="navbar-form pull-right" action="/search" role="search" method="GET">
 				<div class="form-group">
-					<input type="text" class="form-control" name="name" placeholder="Search">
+					<input type="text" class="form-control" name="query" placeholder="Search">
 				</div>
-				<button type="submit" class="btn btn-default">Submit</button>
+				<button type="submit" class="btn btn-default">Search</button>
 			</form>
 			<div class="clearfix"></div>
 		</div>
